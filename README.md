@@ -15,6 +15,7 @@
 
 ```
 git clone https://github.com/pavlowave/Docker-Django-Postgres
+cd Docker-Django-Postgres
 ```
 
 2. Создание .env файла:
