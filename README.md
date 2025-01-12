@@ -39,7 +39,7 @@ docker-compose up --build
 ```
 docker-compose exec web-app python manage.py migrate
 ```
-5. Доступ к приложению Приложение будет доступно по адресу: http://localhost:8000
+5. Доступ к приложению Приложение будет доступно по адресу: http://127.0.0.1:8000/
 
 ## Структура проекта
 
