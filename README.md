@@ -37,7 +37,7 @@ docker-compose up --build
 
 4. Миграции базы данных После запуска контейнера выполните миграции для настройки базы данных:
 ```
-docker exec -it <container_name> python manage.py migrate
+docker-compose exec web-app python manage.py migrate
 ```
 5. Доступ к приложению Приложение будет доступно по адресу: http://localhost:8000
 
