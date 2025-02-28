@@ -1,12 +1,19 @@
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Загружаем переменные окружения из .env
+load_dotenv()
 
 # Определение базовой директории проекта
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Конфиденциальные ключи
-SECRET_KEY = os.environ.get("SECRET_KEY")
-DEBUG = os.environ.get("DEBUG") == "True"
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY is not set in environment variables")
+
+DEBUG = os.getenv("DEBUG") == "True"
 
 # Разрешенные хосты
 ALLOWED_HOSTS = ["127.0.0.1", "0.0.0.0", "localhost", "pavlowave.pythonanywhere.com"]
@@ -87,17 +94,17 @@ STATIC_URL = "/static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Настройки Stripe
-STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY")
-STRIPE_PUBLIC_KEY = os.environ.get("STRIPE_PUBLIC_KEY")
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_PUBLIC_KEY = os.getenv("STRIPE_PUBLIC_KEY")
 
 # Ключи Stripe для разных валют
 STRIPE_KEYS = {
     "usd": {
-        "secret": os.environ.get("STRIPE_USD_SECRET"),
-        "public": os.environ.get("STRIPE_USD_PUBLIC"),
+        "secret": os.getenv("STRIPE_USD_SECRET"),
+        "public": os.getenv("STRIPE_USD_PUBLIC"),
     },
     "eur": {
-        "secret": os.environ.get("STRIPE_EUR_SECRET"),
-        "public": os.environ.get("STRIPE_EUR_PUBLIC"),
+        "secret": os.getenv("STRIPE_EUR_SECRET"),
+        "public": os.getenv("STRIPE_EUR_PUBLIC"),
     }
 }
