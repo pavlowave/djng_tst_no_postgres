@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order {{ order.id }}</title>
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f9f9f9;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            width: 400px;
+        }
+        h1 {
+            margin-bottom: 10px;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            margin: 5px 0;
+        }
+        input, select {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        #card-element {
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            background: white;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+        button:disabled {
+            background: #ccc;
+        }
+        #payment-message {
+            margin-top: 10px;
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Order №{{ order.id }}</h1>
+        <ul>
+            {% for item in order.items.all %}
+                <li>{{ item.name }} - {{ item.price }} {{ currency }}</li>
+            {% endfor %}
+        </ul>
+        <p>Tax: {{ order.tax.percentage }}% ({{ order.tax.name }})</p>
+        <p>Discount: -{{ order.discount.percent_off }}% ({{ order.discount.name }})</p>
+
+        <p><strong>Total: {{ order.get_total_price }} {{ currency }}</strong></p>
+
+        <form id="payment-form">
+            <input type="email" id="email" placeholder="Эл. почта" required>
+            <input type="text" id="first-name" placeholder="Имя" required>
+            <input type="text" id="last-name" placeholder="Фамилия" required>
+            <select id="country" required>
+                <option value="RU">Россия</option>
+                <option value="US">США</option>
+                <option value="GB">Великобритания</option>
+                <option value="DE">Германия</option>
+                <option value="FR">Франция</option>
+            </select>
+            <input type="text" id="postal-code" placeholder="Почтовый индекс" required>
+
+            <div id="card-element"></div>
+            <button id="pay-button">Оплатить</button>
+            <p id="payment-message"></p>
+        </form>
+    </div>
+
+    <script type="text/javascript">
+      document.addEventListener("DOMContentLoaded", async function () {
+        const currency = "{{ currency }}";
+        if (!currency || !"{{ stripe_public_key }}") {
+            console.error("Error: Currency or Stripe public key is missing!");
+            return;
+        }
+
+        var stripe = Stripe("{{ stripe_public_key }}");
+        var elements = stripe.elements();
+        var cardElement = elements.create("card", {
+            style: { base: { fontSize: "16px" } }
+        });
+        cardElement.mount("#card-element");
+
+        let clientSecret = null;
+
+        try {
+            const response = await fetch("/buy/order/{{ order.id }}/");
+            const data = await response.json();
+            console.log("Payment Intent Data:", data);
+
+            if (!data.client_secret) {
+                throw new Error("No client_secret received from server!");
+            }
+
+            clientSecret = data.client_secret;
+        } catch (error) {
+            console.error("Error fetching payment intent:", error);
+            return;
+        }
+
+        document.getElementById("payment-form").addEventListener("submit", async function (event) {
+            event.preventDefault();
+
+            let email = document.getElementById("email").value;
+            let firstName = document.getElementById("first-name").value;
+            let lastName = document.getElementById("last-name").value;
+            let country = document.getElementById("country").value;
+            let postalCode = document.getElementById("postal-code").value;
+
+            if (!email || !firstName || !lastName || !postalCode) {
+                document.getElementById("payment-message").innerText = "Пожалуйста, заполните все поля.";
+                return;
+            }
+
+            document.getElementById("pay-button").disabled = true;
+            document.getElementById("payment-message").innerText = "Обработка платежа...";
+
+            const { paymentIntent, error } = await stripe.confirmCardPayment(clientSecret, {
+                payment_method: {
+                    card: cardElement,
+                    billing_details: {
+                        name: firstName + " " + lastName,
+                        email: email,
+                        address: {
+                            country: country,
+                            postal_code: postalCode
+                        }
+                    }
+                }
+            });
+
+            if (error) {
+                console.error("Ошибка оплаты:", error.message);
+                document.getElementById("payment-message").innerText = "Ошибка: " + error.message;
+                document.getElementById("pay-button").disabled = false;
+            } else {
+                console.log("Платеж успешен:", paymentIntent.id);
+                document.getElementById("payment-message").innerText = "Оплата прошла успешно!";
+                window.location.href = "/success/";
+            }
+        });
+    });
+
+    </script>
+</body>
+</html>
